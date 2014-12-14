@@ -27,5 +27,6 @@
 *.out
 *.app
 
-# Local build configs
+# Local project files
 build_config.sh
+*.sublime-*

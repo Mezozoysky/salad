@@ -1,4 +1,4 @@
-#include "Salad.h"
+#include "SaladApi.h"
 #include "SaladConfig.h"
 
 namespace salad
