@@ -7,6 +7,7 @@ namespace salad
 struct Config
 {
 	static const int slaveAddress = 0x04;
+	static const int loopDelayValue = 50;
 };
 
 }

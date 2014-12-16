@@ -6,42 +6,35 @@
 
 namespace salad
 {
+
+#define CMD_DATA_MAX_LEN 16
   
 class EApp
 {
-private:
-	EApp();
-
 public:
-	virtual ~EApp();
 
 	static void setup();
 	static void iterateLoop();
 
-	static void onReceiveWireHandler(int byteCount);
-	static void onRequestWireHandler();
+	static void onReceive(int byteCount);
+	static void onRequest();
 
 private:
-  void iterate();
-  
-private:
-	static EApp* mApp;
 
-  int number;
-  int state;
+  static void processLastError();
+  static void processDigitalRead();
+  static void processDigitalWrite();
 
-  int cmd[5];
-  int index;
-  int flag;
-  int i;
-  byte val,b[9],float_array[4];
-  int aRead;
-  byte accFlag,clkFlag;
-  int8_t accv[3];
+  static void processPinMode();
 
-  int pin;
-  int j;
+  static void processUnknownCmd(); //stub for error handling only, does not actual command processing;
 
+  static byte currCmd;
+  static byte currCmdData[CMD_DATA_MAX_LEN];
+  static int currCmdDataLen;
+  static int currCmdDataIndex; //cmd buffer index
+
+  static byte errorCode[2];
 };
 
 } //namespace salad

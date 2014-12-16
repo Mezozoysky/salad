@@ -5,132 +5,160 @@
 
 namespace salad
 {
+  byte EApp::currCmd; //cmd id
+  byte EApp::currCmdData[CMD_DATA_MAX_LEN]; //cmd data buffer
+  int EApp::currCmdDataLen; //cmd data (not buffer!) length
+  int EApp::currCmdDataIndex; //cmd buffer index
   
-  EApp* EApp::mApp;
+  byte EApp::errorCode[2]; //buffer for error codes
 
-  EApp::EApp()
-  : number(0)
-  , state(0)
-  , index(0)
-  , flag(0)
-  , val(byte(0))
-  , aRead(0)
-  , accFlag(0)
-  , clkFlag(0)
-  
-  {
-    //do nothing
-  }
-
-  EApp::~EApp()
-  {
-    //do nothing
-  }
 
   void EApp::setup()
   {
-    mApp = new EApp();
+    currCmd = 0;
+    currCmdDataLen = 0;
+    currCmdDataIndex = 0;
+
+    errorCode[0] = 0;
+    errorCode[1] = 0;
 
     Serial.begin(115200); // start serial for output
-    Wire.begin(salad::Config::slaveAddress);
 
-    Wire.onReceive(EApp::onReceiveWireHandler);
-    Wire.onRequest(EApp::onRequestWireHandler);
+    Wire.begin(Config::slaveAddress);
+
+    Wire.onReceive(EApp::onReceive);
+    Wire.onRequest(EApp::onRequest);
 
     Serial.println("Salad is ready!");
   }
 
   void EApp::iterateLoop()
   {
-    mApp->iterate();
+    delay(Config::loopDelayValue);
   }
 
-  void EApp::iterate()
+  void EApp::onReceive(int byteCount)
   {
-    long dur,RangeCm;
-
-    if(index==4 && flag==0)
+    if ( Wire.available() )
     {
-      flag=1;
-      //Digital Read
-      if(cmd[0]==1)
-        val=digitalRead(cmd[1]);
-        
-      //Digital Write
-      if(cmd[0]==2)
-        digitalWrite(cmd[1],cmd[2]);
-        
-      //Analog Read
-      if(cmd[0]==3)
-      {
-        aRead=analogRead(cmd[1]);
-        b[1]=aRead/256;
-        b[2]=aRead%256;
-      }
-        
-      //Set up Analog Write
-      if(cmd[0]==4)
-        analogWrite(cmd[1],cmd[2]);
-          
-      //Set up pinMode
-      if(cmd[0]==5)
-      pinMode(cmd[1],cmd[2]);
-    
-      //Ultrasonic Read
-      if(cmd[0]==7)   
-      {
-        pin=cmd[1];
-        pinMode(pin, OUTPUT);
-        digitalWrite(pin, LOW);
-        delayMicroseconds(2);
-        digitalWrite(pin, HIGH);
-        delayMicroseconds(5);
-        digitalWrite(pin,LOW);
-        pinMode(pin,INPUT);
-        dur = pulseIn(pin,HIGH);
-        RangeCm = dur/29/2;
-        b[1]=RangeCm/256;
-        b[2]=RangeCm%256;
-      }
+      currCmd = Wire.read();
 
-      if ( cmd[0] == 50 )
+      switch ( currCmd )
       {
-        val = Config::slaveAddress;
+        case ( CMD_NOP ):
+          return;
+        break;
+
+        case ( CMD_LAST_ERROR ):
+          processLastError();
+        break;
+
+        case ( CMD_DIGITAL_READ ):
+          processDigitalRead();
+        break;
+
+        case ( CMD_DIGITAL_WRITE ):
+          processDigitalWrite();
+        break;
+
+        // case ( CMD_ANALOG_READ ):
+        //   processAnalogRead();
+        // break;
+
+        // case ( CMD_ANALOR_WRITE ):
+        //   processAnalogWrite();
+        // break;
+
+        case ( CMD_PIN_MODE ):
+          processPinMode();
+        break;
+
+        default:
+          processUnknownCmd();
+        break;
       }
     }
   }
   
-  void EApp::onReceiveWireHandler(int byteCount)
+
+  void EApp::onRequest()
   {
-    while(Wire.available()) 
+    if ( currCmdDataLen > 0 )
     {
-      if(Wire.available()==4)
-      { 
-        mApp->flag=0;
-        mApp->index=0;
+      currCmdDataIndex = 0;
+      while ( currCmdDataIndex < currCmdDataLen )
+      {
+        Wire.write(currCmdData[currCmdDataIndex]);
+        ++currCmdDataIndex;
       }
-      mApp->cmd[mApp->index++] = Wire.read();
     }
   }
 
-  void EApp::onRequestWireHandler()
+  void EApp::processLastError()
   {
-    if(mApp->cmd[0]==1 || mApp->cmd[0] == 50)
+    currCmdData[ 0 ] = errorCode[ 0 ];
+    currCmdData[ 1 ] = errorCode[ 1 ];
+    currCmdDataLen = 2;
+  }
+
+  void EApp::processDigitalRead()
+  {
+    if ( Wire.available() < 1 )
     {
-      Wire.write(mApp->val);
+      errorCode[ 0 ] = 2; //few arguments for command
+      errorCode[ 1 ] = currCmd; //command number
+      currCmdDataLen = 0;
+      return;
     }
-    if(mApp->cmd[0]==3 ||mApp->cmd[0]==7)
+    //read command args
+    currCmdData[ 0 ] = Wire.read(); //pin
+
+    //process command and form the response
+    currCmdData[ 0 ] = digitalRead( currCmdData[ 0 ] );
+    currCmdDataLen = 1;
+  }
+
+  void EApp::processDigitalWrite()
+  {
+    if ( Wire.available() < 2 )
     {
-      Wire.write(mApp->b, 3);
+      errorCode[ 0 ] = 2; //few arguments for command
+      errorCode[ 1 ] = currCmd; //command id
+      currCmdDataLen = 0;
+      return;
     }
-    if(mApp->cmd[0]==20)
+    //read command args
+    currCmdData[ 0 ] = Wire.read(); //pin
+    currCmdData[ 1 ] = Wire.read(); //value to write
+
+    //process command and form the response
+    digitalWrite( currCmdData[ 0 ], currCmdData[ 1 ] );
+    currCmdDataLen = 0;
+  }
+
+  void EApp::processPinMode()
+  {
+    if ( Wire.available() < 2 )
     {
-      Wire.write(mApp->b, 4);
+      errorCode[ 0 ] = 2; //few arguments for command
+      errorCode[ 1 ] = currCmd; //command id
+      currCmdDataLen = 0;
+      return;
     }
-    if(mApp->cmd[0]==30||mApp->cmd[0]==40)
-    {
-      Wire.write(mApp->b, 9);
-    }
+    //read command args
+    currCmdData[ 0 ] = Wire.read(); //pin
+    currCmdData[ 1 ] = Wire.read(); //mode
+
+    //process command and form the response
+    pinMode( currCmdData[ 0 ], currCmdData[ 1 ] );
+    currCmdDataLen = 0;
+  }
+
+  void EApp::processUnknownCmd()
+  {
+    errorCode[ 0 ] = 1; //unknow command error
+    errorCode[ 1 ] = currCmd; //command id
+    currCmdDataLen = 0;
   }
 
 } //namespace salad

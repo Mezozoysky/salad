@@ -4,16 +4,16 @@
 namespace salad
 {
 
-enum Commands
+enum
 {
-  NOP = 0,
-  DIGITAL_READ,
-  DIGITAL_WRITE,
-  ANALOG_READ,
-  ANALOG_WRITE,
-  MODE,
-  RANGER,
-  COMMANDS_COUNS
+  CMD_NOP = 0,
+  CMD_LAST_ERROR = 1,
+  CMD_DIGITAL_READ = 2,
+  CMD_DIGITAL_WRITE = 3,
+  CMD_ANALOG_READ = 4,
+  CMD_ANALOG_WRITE = 5,
+  CMD_PIN_MODE = 6,
+  CMD_RANGER = 101
 };
 
 } //namespace salad
