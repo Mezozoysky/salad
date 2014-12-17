@@ -8,36 +8,38 @@ namespace salad
   byte EApp::currCmd; //cmd id
   byte EApp::currCmdData[CMD_DATA_MAX_LEN]; //cmd data buffer
   int EApp::currCmdDataLen; //cmd data (not buffer!) length
-  int EApp::currCmdDataIndex; //cmd buffer index
   
-  byte EApp::errorCode[2]; //buffer for error codes
+  byte EApp::errorCode[ 2 ]; //buffer for error codes
+
+  int EApp::analogTmp; //storage for temporary analog values 
 
 
   void EApp::setup()
   {
     currCmd = 0;
     currCmdDataLen = 0;
-    currCmdDataIndex = 0;
 
     errorCode[0] = 0;
     errorCode[1] = 0;
 
-    Serial.begin(115200); // start serial for output
+    analogTmp = 0;
 
-    Wire.begin(Config::slaveAddress);
+    Serial.begin( 115200 ); // start serial for output
 
-    Wire.onReceive(EApp::onReceive);
-    Wire.onRequest(EApp::onRequest);
+    Wire.begin( Config::slaveAddress );
 
-    Serial.println("Salad is ready!");
+    Wire.onReceive( EApp::onReceive );
+    Wire.onRequest( EApp::onRequest );
+
+    Serial.println( "Salad is ready!" );
   }
 
   void EApp::iterateLoop()
   {
-    delay(Config::loopDelayValue);
+    delay( Config::loopDelayValue );
   }
 
-  void EApp::onReceive(int byteCount)
+  void EApp::onReceive( int byteCount )
   {
     if ( Wire.available() )
     {
@@ -61,13 +63,13 @@ namespace salad
           processDigitalWrite();
         break;
 
-        // case ( CMD_ANALOG_READ ):
-        //   processAnalogRead();
-        // break;
+        case ( CMD_ANALOG_READ ):
+          processAnalogRead();
+        break;
 
-        // case ( CMD_ANALOR_WRITE ):
-        //   processAnalogWrite();
-        // break;
+        case ( CMD_ANALOG_WRITE ):
+          processAnalogWrite();
+        break;
 
         case ( CMD_PIN_MODE ):
           processPinMode();
@@ -85,12 +87,7 @@ namespace salad
   {
     if ( currCmdDataLen > 0 )
     {
-      currCmdDataIndex = 0;
-      while ( currCmdDataIndex < currCmdDataLen )
-      {
-        Wire.write(currCmdData[currCmdDataIndex]);
-        ++currCmdDataIndex;
-      }
+      Wire.write( currCmdData, currCmdDataLen );
     }
   }
 
@@ -133,6 +130,43 @@ namespace salad
 
     //process command and form the response
     digitalWrite( currCmdData[ 0 ], currCmdData[ 1 ] );
+    currCmdDataLen = 0;
+  }
+
+  void EApp::processAnalogRead()
+  {
+    if ( Wire.available() < 1 )
+    {
+      errorCode[ 0 ] = 2; //few args
+      errorCode[ 1 ] = currCmd;
+      currCmdDataLen = 0;
+      return;
+    }
+    //read args
+    currCmdData[ 0 ] = Wire.read(); //pin
+
+    //process
+    analogTmp = analogRead( currCmdData[ 0 ] );
+    currCmdData[ 0 ] = analogTmp / 256;
+    currCmdData[ 1 ] = analogTmp % 256;
+    currCmdDataLen = 2;
+  }
+
+  void EApp::processAnalogWrite()
+  {
+    if ( Wire.available() < 2 )
+    {
+      errorCode[ 0 ] = 2; //few args
+      errorCode[ 1 ] = currCmd;
+      currCmdDataLen = 0;
+      return;
+    }
+    //read args
+    currCmdData[ 0 ] = Wire.read(); //pin
+    currCmdData[ 1 ] = Wire.read(); //value to write
+
+    //process
+    analogWrite( currCmdData[ 0 ], currCmdData[ 1 ] );
     currCmdDataLen = 0;
   }
 

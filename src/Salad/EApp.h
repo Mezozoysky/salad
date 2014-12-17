@@ -24,7 +24,8 @@ private:
   static void processLastError();
   static void processDigitalRead();
   static void processDigitalWrite();
-
+  static void processAnalogRead();
+  static void processAnalogWrite();
   static void processPinMode();
 
   static void processUnknownCmd(); //stub for error handling only, does not actual command processing;
@@ -32,9 +33,10 @@ private:
   static byte currCmd;
   static byte currCmdData[CMD_DATA_MAX_LEN];
   static int currCmdDataLen;
-  static int currCmdDataIndex; //cmd buffer index
 
   static byte errorCode[2];
+
+  static int analogTmp;
 };
 
 } //namespace salad
