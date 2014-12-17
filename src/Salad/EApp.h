@@ -13,11 +13,11 @@ class EApp
 {
 public:
 
-	static void setup();
-	static void iterateLoop();
+  static void setup();
+  static void iterateLoop();
 
-	static void onReceive(int byteCount);
-	static void onRequest();
+  static void onReceive(int byteCount);
+  static void onRequest();
 
 private:
 

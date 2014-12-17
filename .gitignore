@@ -26,6 +26,7 @@
 *.exe
 *.out
 *.app
+bin/*
 
 # Local project files
 build_config.sh
