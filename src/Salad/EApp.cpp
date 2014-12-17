@@ -75,6 +75,10 @@ namespace salad
           processPinMode();
         break;
 
+        case ( CMD_RANGER_READ ):
+          processRangerRead();
+        break;
+
         default:
           processUnknownCmd();
         break;
@@ -186,6 +190,36 @@ namespace salad
     //process command and form the response
     pinMode( currCmdData[ 0 ], currCmdData[ 1 ] );
     currCmdDataLen = 0;
+  }
+
+  void EApp::processRangerRead()
+  {
+    if ( Wire.available() < 1 )
+    {
+      errorCode[ 0 ] = 2; //few args
+      errorCode[ 1 ] = currCmd;
+      currCmdDataLen = 0;
+      return;
+    }
+    //read args
+    currCmdData[ 0 ] = Wire.read(); //pin
+
+    //process
+    pinMode( currCmdData[ 0 ], OUTPUT );
+    digitalWrite( currCmdData[ 0 ], LOW );
+    delayMicroseconds( 2 );
+    digitalWrite( currCmdData[ 0 ], HIGH );
+    delayMicroseconds( 5 );
+    digitalWrite( currCmdData[ 0 ], LOW );
+    pinMode( currCmdData[ 0 ], INPUT );
+
+    long rangeCm = pulseIn( currCmdData[ 0 ], HIGH ) / 29 / 2;
+
+    currCmdData[ 0 ] = rangeCm / 256;
+    currCmdData[ 1 ] = rangeCm % 256;
+    currCmdDataLen = 2;
+
+    // 5 290 - 5 212
   }
 
   void EApp::processUnknownCmd()

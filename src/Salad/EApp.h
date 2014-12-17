@@ -28,6 +28,8 @@ private:
   static void processAnalogWrite();
   static void processPinMode();
 
+  static void processRangerRead();
+
   static void processUnknownCmd(); //stub for error handling only, does not actual command processing;
 
   static byte currCmd;

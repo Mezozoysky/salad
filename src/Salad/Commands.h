@@ -13,7 +13,7 @@ enum
   CMD_ANALOG_READ = 4,
   CMD_ANALOG_WRITE = 5,
   CMD_PIN_MODE = 6,
-  CMD_RANGER = 101
+  CMD_RANGER_READ = 101
 };
 
 } //namespace salad
