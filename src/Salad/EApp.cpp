@@ -36,7 +36,7 @@ namespace salad
 
   void EApp::iterateLoop()
   {
-    delay( Config::loopDelayValue );
+    delay( Config::loopDelayMiliseconds );
   }
 
   void EApp::onReceive( int byteCount )
