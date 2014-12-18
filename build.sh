@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ARDUINO_HOME="/usr/share/arduino"
 AVR_GCC_HOME="${ARDUINO_HOME}/hardware/tools/avr"
@@ -9,7 +9,7 @@ BIN_DIR=${BASE_DIR}/bin
 SALAD_INCLUDE_DIRS="-I${SRC_DIR}"
 
 if [ -f "./build_config.sh" ]; then
-    source ./build_config.sh
+  . ./build_config.sh
 else
 	echo "\t!! N.B.!"
 	echo "\t!! You can override build setting with 'build_config.sh' file."
@@ -19,10 +19,24 @@ fi
 C_COMPILER="${AVR_GCC_HOME}/bin/avr-gcc"
 CPP_COMPILER="${AVR_GCC_HOME}/bin/avr-g++"
 ARCHIVER="${AVR_GCC_HOME}/bin/avr-ar"
+OBJCOPY="${AVR_GCC_HOME}/bin/avr-objcopy"
 
 C_OPTIONS="-c -g -Os -Wall -ffunction-sections -fdata-sections -mmcu=atmega328p -DF_CPU=16000000L -MMD -DUSB_VID=null -DUSB_PID=null -DARDUINO=106"
 CPP_OPTIONS="-c -g -Os -Wall -fno-exceptions -ffunction-sections -fdata-sections -mmcu=atmega328p -DF_CPU=16000000L -MMD -DUSB_VID=null -DUSB_PID=null -DARDUINO=106"
 LINK_OPTIONS="-Os -Wl,--gc-sections -mmcu=atmega328p"
+
+echo "!! ARDUINO_HOME: ${ARDUINO_HOME}"
+echo "!! AVR_GCC_HOME: ${AVR_GCC_HOME}"
+echo "!! SRC_DIR: ${SRC_DIR}"
+echo "!! BIN_DIR: ${BIN_DIR}"
+echo "!! C_COMPILER: ${C_COMPILER}"
+echo "!! CPP_COMPILER: ${CPP_COMPILER}"
+echo "!! ARCHIVER: ${ARCHIVER}"
+echo "!! OBJCOPY: ${OBJCOPY}"
+echo "!! C_OPTIONS: ${C_OPTIONS}"
+echo "!! CPP_OPTIONS: ${CPP_OPTIONS}"
+echo "!! LINK_OPTIONS: ${LINK_OPTIONS}"
+echo
 
 #TODO: arduino preprocessing
 
@@ -50,128 +64,14 @@ if [ ! -d "${BIN_DIR}/arduino/avr-libc" ]; then
   mkdir "${BIN_DIR}/arduino/avr-libc"
 fi
 
-compileSource()
-{
-  local ARG_SRC=$1
-  local ARG_OBJ=$2
-  local ARG_INCLUDE_DIRS=$3
+if [ -f "./build_functions.sh" ]; then
+  . ./build_functions.sh
+else
+  echo "!! cant find 'build_functions.sh'"
+  exit
+fi
 
-  local COMPILER=""
-  local OPTIONS=""
-  if [[ $ARG_SRC == *".c" ]]; then
-    COMPILER=${C_COMPILER}
-    OPTIONS=${C_OPTIONS}
-  fi
-  if [[ $ARG_SRC == *".cpp" ]]; then
-    COMPILER=${CPP_COMPILER}
-    OPTIONS=${CPP_OPTIONS}
-  fi
-  local CMD="${COMPILER} ${OPTIONS} ${ARG_INCLUDE_DIRS} ${ARG_SRC} -o ${ARG_OBJ}"
-
-  echo "compiling '${ARG_SRC}' .."
-  local CMD_OUTPUT=`${CMD}`
-  if [ "x$CMD_OUTPUT" = "x" ]; then
-    echo "done." # compiling '${ARG_SRC}'
-  else
-    echo "!! command:"
-    echo ${CMD}
-    echo "!! output:"
-    echo ${CMD_OUTPUT}
-
-    if [ -f "${ARG_OBJ}" ]; then
-      echo "done." # compiling '${ARG_SRC}'
-    else
-      exit
-    fi
-  fi
-}
-
-compileSourcesFromDir()
-{
-  local ARG_SRC_DIR=$1
-  local ARG_SRC_LIST=$2
-  local ARG_INCLUDE_DIRS=$3
-
-  local OBJS=""
-
-  #echo "compiling sources from '${ARG_SRC_DIR}' .."
-  for S in ${ARG_SRC_LIST}
-  do
-    local SRC_FN="${ARG_SRC_DIR}/${S}"
-    local OBJ_FN="${BIN_DIR}/${S}.o"
-
-    compileSource "${SRC_FN}" "${OBJ_FN}" "${ARG_INCLUDE_DIRS}"
-    OBJS="${OBJS} ${OBJ_FN}"
-  done
-  #echo "done." # compiling source from '${ARG_SRC_DIR}'
-  LAST_RESULT=${OBJS}
-}
-
-archiveStaticLib()
-{
-  local ARG_LIBNAME=$1
-  local ARG_OBJ_LIST=$2
-  local ARG_BIN_PREFIX=$3
-
-  local LIB_FILE="${BIN_DIR}/${ARG_BIN_PREFIX}/lib${ARG_LIBNAME}.a"
-  echo "creating static library '${LIB_FILE}' .."
-  for F in ${ARG_OBJ_LIST}
-  do
-    local CMD="${ARCHIVER} rcs ${LIB_FILE} ${F}"
-    echo "archiving '${F}' into '${LIB_FILE}' .."
-    local CMD_OUTPUT=`${CMD}`
-    if [ "x$CMD_OUTPUT" = "x" ]; then
-      echo "done." # compiling '${ARG_SRC}'
-    else
-      echo "!! command:"
-      echo ${CMD}
-      echo "!! output:"
-      echo ${CMD_OUTPUT}
-
-      if [ -f "${LIB_FILE}" ]; then
-        echo "done." # compiling '${ARG_SRC}'
-      else
-        exit
-      fi
-    fi
-  done
-
-  echo "done."
-
-  LAST_RESULT=${LIB_FILE}
-}
-
-buildElfExecutable()
-{
-  local ARG_ELFNAME=$1
-  local ARG_OBJS=$2
-  local ARG_STATIC_LIBS=$3
-  local ARG_BIN_PREFIX=$4
-
-  local ELF_FILE="${BIN_DIR}/${ARG_BIN_PREFIX}/${ARG_ELFNAME}.elf"
-  echo "creating ELF executable '${ELF_FILE}' .."
-
-  local CMD="${C_COMPILER} ${LINK_OPTIONS} -o ${ELF_FILE} ${ARG_OBJS} ${ARG_STATIC_LIBS}"
-  local CMD_OUTPUT=`${CMD}`
-  if [ "x$CDM_OUTPUT" = "x" ]; then
-    echo "done."
-  else
-    echo "!! command:"
-    echo ${CMD}
-    echo "!! output:"
-    echo ${CMD_OUTPUT}
-
-    if [ -f "{ELF_FILE}" ]; then
-      echo "done."
-    else
-      exit
-    fi
-  fi
-
-  LAST_RESULT=${ELF_FILE}
-}
-
-echo "\n\tARDUINO LIB\n"
+echo $'\n\tBUILDING ARDUINO LIB\n'
 
 #compile Arduino
 ARDUINO_INCLUDE_DIRS="${ARDUINO_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/cores/arduino"
@@ -194,7 +94,7 @@ ARDUINO_OBJS="${ARDUINO_OBJS} ${LAST_RESULT}"
 archiveStaticLib "Arduino" "${ARDUINO_OBJS}" ""
 ARDUINO_LIB="${LAST_RESULT}"
 
-echo "\n\tWIRE LIB\n"
+echo $'\n\tBUILDING WIRE LIB\n'
 
 #compile Wire
 WIRE_INCLUDE_DIRS="${WIRE_INCLUDE_DIRS} -I${ARDUINO_HOME}/libraries/Wire"
@@ -209,7 +109,7 @@ WIRE_OBJS="${WIRE_OBJS} ${LAST_RESULT}"
 archiveStaticLib "Wire" "${WIRE_OBJS}" ""
 WIRE_LIB="${LAST_RESULT}"
 
-echo "\n\tSALAD\n"
+echo $'\n\tBUILDING SALAD FIRMWARE\n'
 
 #compile Salad
 SALAD_INCLUDE_DIRS="${SALAD_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/cores/arduino"
@@ -222,3 +122,6 @@ SALAD_OBJS="${SALAD_OBJS} ${LAST_RESULT}"
 #build Salad ELF
 buildElfExecutable "Salad" "${SALAD_OBJS}" "${WIRE_LIB} ${ARDUINO_LIB}" ""
 SALAD_ELF="${LAST_RESULT}"
+#create Salad hex
+createHexFile "Salad" "${SALAD_ELF}" ""
+SALAD_HEX="${LAST_RESULT}"
