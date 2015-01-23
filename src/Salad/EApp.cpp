@@ -5,9 +5,9 @@
 
 namespace salad
 {
-  byte EApp::currCmd; //cmd id
   byte EApp::currCmdData[CMD_DATA_MAX_LEN]; //cmd data buffer
   int EApp::currCmdDataLen; //cmd data (not buffer!) length
+  bool EApp::isNewCmd; //true means we have new cmd received 
   
   byte EApp::errorCode[ 2 ]; //buffer for error codes
 
@@ -16,11 +16,11 @@ namespace salad
 
   void EApp::setup()
   {
-    currCmd = 0;
     currCmdDataLen = 0;
+    isNewCmd = false;
 
-    errorCode[0] = 0;
-    errorCode[1] = 0;
+    errorCode[ 0 ] = 0;
+    errorCode[ 1 ] = 0;
 
     analogTmp = 0;
 
@@ -36,18 +36,13 @@ namespace salad
 
   void EApp::iterateLoop()
   {
-    delay( Config::loopDelayMiliseconds );
-  }
-
-  void EApp::onReceive( int byteCount )
-  {
-    if ( Wire.available() )
+    if ( isNewCmd && currCmdDataLen > 0 )
     {
-      currCmd = Wire.read();
-
-      switch ( currCmd )
+      isNewCmd = false;
+      switch ( currCmdData[ 0 ] )
       {
         case ( CMD_NOP ):
+          currCmdDataLen = 1;
           return;
         break;
 
@@ -84,12 +79,27 @@ namespace salad
         break;
       }
     }
+    //delay( Config::loopDelayMiliseconds );
+  }
+
+  void EApp::onReceive( int byteCount )
+  {
+    if ( Wire.available() ) //excrescent test?
+    {
+      isNewCmd = true;
+      currCmdDataLen = 0;
+      while ( Wire.available() )
+      {
+        currCmdData[ currCmdDataLen++ ] = Wire.read();
+      }
+      ++currCmdDataLen;
+    }
   }
   
 
   void EApp::onRequest()
   {
-    if ( currCmdDataLen > 0 )
+    if ( !isNewCmd && currCmdDataLen > 0 )
     {
       Wire.write( currCmdData, currCmdDataLen );
     }
@@ -97,127 +107,118 @@ namespace salad
 
   void EApp::processLastError()
   {
-    currCmdData[ 0 ] = errorCode[ 0 ];
-    currCmdData[ 1 ] = errorCode[ 1 ];
-    currCmdDataLen = 2;
+    currCmdData[ 1 ] = errorCode[ 0 ];
+    currCmdData[ 2 ] = errorCode[ 1 ];
+    currCmdDataLen = 3;
   }
 
   void EApp::processDigitalRead()
   {
-    if ( Wire.available() < 1 )
+    if ( currCmdDataLen < 2 )
     {
       errorCode[ 0 ] = 2; //few arguments for command
-      errorCode[ 1 ] = currCmd; //command number
-      currCmdDataLen = 0;
+      errorCode[ 1 ] = currCmdData[ 0 ]; //command number
+      currCmdData[ 0 ] = CMD_NOP;
+      currCmdDataLen = 1;
       return;
     }
-    //read command args
-    currCmdData[ 0 ] = Wire.read(); //pin
 
     //process command and form the response
-    currCmdData[ 0 ] = digitalRead( currCmdData[ 0 ] );
-    currCmdDataLen = 1;
+    currCmdData[ 1 ] = digitalRead( /*pin*/currCmdData[ 1 ] );
+    currCmdDataLen = 2;
   }
 
   void EApp::processDigitalWrite()
   {
-    if ( Wire.available() < 2 )
+    if ( currCmdDataLen < 3 )
     {
       errorCode[ 0 ] = 2; //few arguments for command
-      errorCode[ 1 ] = currCmd; //command id
-      currCmdDataLen = 0;
+      errorCode[ 1 ] = currCmdData[ 0 ]; //command number
+      currCmdData[ 0 ] = CMD_NOP;
+      currCmdDataLen = 1;
       return;
     }
-    //read command args
-    currCmdData[ 0 ] = Wire.read(); //pin
-    currCmdData[ 1 ] = Wire.read(); //value to write
 
     //process command and form the response
-    digitalWrite( currCmdData[ 0 ], currCmdData[ 1 ] );
-    currCmdDataLen = 0;
+    digitalWrite( /*pin*/currCmdData[ 1 ], /*value*/currCmdData[ 2 ] );
+    currCmdDataLen = 1; //cmd number as response
   }
 
   void EApp::processAnalogRead()
   {
-    if ( Wire.available() < 1 )
+    if ( currCmdDataLen < 2 )
     {
       errorCode[ 0 ] = 2; //few args
-      errorCode[ 1 ] = currCmd;
-      currCmdDataLen = 0;
+      errorCode[ 1 ] = currCmdData[ 0 ]; //command number
+      currCmdData[ 0 ] = CMD_NOP;
+      currCmdDataLen = 1;
       return;
     }
-    //read args
-    currCmdData[ 0 ] = Wire.read(); //pin
 
     //process
-    analogTmp = analogRead( currCmdData[ 0 ] );
-    currCmdData[ 0 ] = analogTmp / 256;
-    currCmdData[ 1 ] = analogTmp % 256;
-    currCmdDataLen = 2;
+    analogTmp = analogRead( /*pin*/currCmdData[ 1 ] );
+    currCmdData[ 1 ] = analogTmp / 256;
+    currCmdData[ 2 ] = analogTmp % 256;
+    currCmdDataLen = 3;
   }
 
   void EApp::processAnalogWrite()
   {
-    if ( Wire.available() < 2 )
+    if ( currCmdDataLen < 3 )
     {
       errorCode[ 0 ] = 2; //few args
-      errorCode[ 1 ] = currCmd;
-      currCmdDataLen = 0;
+      errorCode[ 1 ] = currCmdData[ 0 ];
+      currCmdData[ 0 ] = CMD_NOP;
+      currCmdDataLen = 1;
       return;
     }
-    //read args
-    currCmdData[ 0 ] = Wire.read(); //pin
-    currCmdData[ 1 ] = Wire.read(); //value to write
 
     //process
-    analogWrite( currCmdData[ 0 ], currCmdData[ 1 ] );
-    currCmdDataLen = 0;
+    analogWrite( /*pin*/currCmdData[ 1 ], /*value*/currCmdData[ 2 ] );
+    currCmdDataLen = 1; //cmd number as response
   }
 
   void EApp::processPinMode()
   {
-    if ( Wire.available() < 2 )
+    if ( currCmdDataLen < 3 )
     {
       errorCode[ 0 ] = 2; //few arguments for command
-      errorCode[ 1 ] = currCmd; //command id
-      currCmdDataLen = 0;
+      errorCode[ 1 ] = currCmdData[ 0 ]; //command id
+      currCmdData[ 0 ] = CMD_NOP;
+      currCmdDataLen = 1;
       return;
     }
-    //read command args
-    currCmdData[ 0 ] = Wire.read(); //pin
-    currCmdData[ 1 ] = Wire.read(); //mode
 
     //process command and form the response
-    pinMode( currCmdData[ 0 ], currCmdData[ 1 ] );
-    currCmdDataLen = 0;
+    pinMode( /*pin*/currCmdData[ 1 ], /*mode*/currCmdData[ 2 ] );
+    currCmdDataLen = 1; //cmd number as response
   }
 
   void EApp::processRangerRead()
   {
-    if ( Wire.available() < 1 )
+    if ( currCmdDataLen < 2 )
     {
       errorCode[ 0 ] = 2; //few args
-      errorCode[ 1 ] = currCmd;
-      currCmdDataLen = 0;
+      errorCode[ 1 ] = currCmdData[ 0 ];
+      currCmdData[ 0 ] = CMD_NOP;
+      currCmdDataLen = 1;
       return;
     }
-    //read args
-    currCmdData[ 0 ] = Wire.read(); //pin
 
     //process
-    pinMode( currCmdData[ 0 ], OUTPUT );
-    digitalWrite( currCmdData[ 0 ], LOW );
+    pinMode( currCmdData[ 1 ], OUTPUT );
+    digitalWrite( currCmdData[ 1 ], LOW );
     delayMicroseconds( 2 );
-    digitalWrite( currCmdData[ 0 ], HIGH );
+    digitalWrite( currCmdData[ 1 ], HIGH );
     delayMicroseconds( 5 );
-    digitalWrite( currCmdData[ 0 ], LOW );
-    pinMode( currCmdData[ 0 ], INPUT );
+    digitalWrite( currCmdData[ 1 ], LOW );
+    pinMode( currCmdData[ 1 ], INPUT );
 
-    long rangeCm = pulseIn( currCmdData[ 0 ], HIGH ) / 29 / 2;
+    long rangeCm = pulseIn( currCmdData[ 1 ], HIGH ) / 29 / 2;
 
-    currCmdData[ 0 ] = rangeCm / 256;
-    currCmdData[ 1 ] = rangeCm % 256;
-    currCmdDataLen = 2;
+    currCmdData[ 1 ] = rangeCm / 256;
+    currCmdData[ 2 ] = rangeCm % 256;
+    currCmdDataLen = 3;
 
     // 5 290 - 5 212
   }
@@ -225,8 +226,9 @@ namespace salad
   void EApp::processUnknownCmd()
   {
     errorCode[ 0 ] = 1; //unknow command error
-    errorCode[ 1 ] = currCmd; //command id
-    currCmdDataLen = 0;
+    errorCode[ 1 ] = currCmdData[ 0 ]; //command id
+    currCmdData[ 0 ] = CMD_NOP;
+    currCmdDataLen = 1;
   }
 
 } //namespace salad

@@ -32,9 +32,9 @@ private:
 
   static void processUnknownCmd(); //stub for error handling only, does not actual command processing;
 
-  static byte currCmd;
   static byte currCmdData[CMD_DATA_MAX_LEN];
   static int currCmdDataLen;
+  static bool isNewCmd;
 
   static byte errorCode[2];
 
