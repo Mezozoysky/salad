@@ -3,8 +3,8 @@
 ARDUINO_HOME="/usr/share/arduino"
 AVR_GCC_HOME="/usr"
 BASE_DIR=`pwd -P`
-SRC_DIR=${BASE_DIR}/src
-BIN_DIR=${BASE_DIR}/bin
+SRC_DIR="${BASE_DIR}/src"
+BIN_DIR="${BASE_DIR}/bin"
 
 SALAD_INCLUDE_DIRS="-I${SRC_DIR}"
 
