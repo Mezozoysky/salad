@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include <DHT.h>
 
 namespace salad
 {
@@ -29,6 +30,7 @@ private:
   static void processPinMode();
 
   static void processRangerRead();
+  static void processReadTH();
 
   static void processUnknownCmd(); //stub for error handling only, does not actual command processing;
 
@@ -37,6 +39,8 @@ private:
   static bool isNewCmd;
 
   static byte errorCode[2];
+
+  static DHT dht;
 
   static int analogTmp;
 };

@@ -11,6 +11,8 @@ namespace salad
   
   byte EApp::errorCode[ 2 ]; //buffer for error codes
 
+  DHT EApp::dht; //dht sensor
+
   int EApp::analogTmp; //storage for temporary analog values 
 
 
@@ -72,6 +74,10 @@ namespace salad
 
         case ( CMD_RANGER_READ ):
           processRangerRead();
+        break;
+
+        case ( CMD_READ_TH ):
+          processReadTH();
         break;
 
         default:
@@ -221,6 +227,38 @@ namespace salad
     currCmdDataLen = 3;
 
     // 5 290 - 5 212
+  }
+
+  void EApp::processReadTH()
+  {
+    if ( currCmdDataLen < 1 )
+    {
+      errorCode[ 0 ] = 2; //few args for cmd
+      errorCode[ 1 ] = currCmdData[ 0 ];
+      currCmdData[ 0 ] = CMD_NOP;
+      currCmdDataLen = 1;
+      return;
+    }
+
+    dht.begin( currCmdData[ 1 ], Config::thSensorType );
+
+    float v = dht.readTemperature();
+
+    byte* b = (byte*)&v;
+    for ( int i = 0; i < 4; ++i )
+    {
+      currCmdData[ i + 1 ] = b[ i ];
+    }
+
+    v = dht.readHumidity();
+
+    b = (byte*)&v;
+    for ( int i = 0; i < 4; ++i )
+    {
+      currCmdData[ i + 5 ] = b[ i ];
+    }
+
+    currCmdDataLen = 9;
   }
 
   void EApp::processUnknownCmd()

@@ -11,9 +11,9 @@ SALAD_INCLUDE_DIRS="-I${SRC_DIR}"
 if [ -f "./build_config.sh" ]; then
   . ./build_config.sh
 else
-	echo "\t!! N.B.!"
-	echo "\t!! You can override build setting with 'build_config.sh' file."
-	echo "\t!! See details in 'build_config.sample.sh'."
+	print "\t!! N.B.!"
+	print "\t!! You can override build setting with 'build_config.sh' file."
+	print "\t!! See details in 'build_config.sample.sh'."
 fi
 
 C_COMPILER="${AVR_GCC_HOME}/bin/avr-gcc"
@@ -50,6 +50,9 @@ if [ ! -d "${BIN_DIR}" ]; then
 fi
 if [ ! -d "${BIN_DIR}/Salad" ]; then
   mkdir "${BIN_DIR}/Salad"
+fi
+if [ ! -d "${BIN_DIR}/Salad/libs" ]; then
+  mkdir "${BIN_DIR}/Salad/libs"
 fi
 if [ ! -d "${BIN_DIR}/Wire" ]; then
   mkdir "${BIN_DIR}/Wire"
@@ -109,18 +112,32 @@ WIRE_OBJS="${WIRE_OBJS} ${LAST_RESULT}"
 archiveStaticLib "Wire" "${WIRE_OBJS}" ""
 WIRE_LIB="${LAST_RESULT}"
 
+echo $'\n\tBUILDING DHT LIB\n'
+
+#compile DHT
+DHT_INCLUDE_DIRS="${DHT_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/cores/arduino"
+DHT_INCLUDE_DIRS="${DHT_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/variants/eightanaloginputs"
+DHT_SRCS="Salad/libs/DHT.cpp"
+DHT_OBJS=""
+compileSourcesFromDir "${SRC_DIR}" "${DHT_SRCS}" "${DHT_INCLUDE_DIRS}"
+DHT_OBJS="${DHT_OBJS} ${LAST_RESULT}"
+#create DHT lib
+archiveStaticLib "DHT" "${DHT_OBJS}" ""
+DHT_LIB="${LAST_RESULT}"
+
 echo $'\n\tBUILDING SALAD FIRMWARE\n'
 
 #compile Salad
 SALAD_INCLUDE_DIRS="${SALAD_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/cores/arduino"
 SALAD_INCLUDE_DIRS="${SALAD_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/variants/eightanaloginputs"
 SALAD_INCLUDE_DIRS="${SALAD_INCLUDE_DIRS} -I${ARDUINO_HOME}/libraries/Wire"
+SALAD_INCLUDE_DIRS="${SALAD_INCLUDE_DIRS} -I${SRC_DIR}/Salad/libs"
 SALAD_SRCS="Salad/Salad.cpp Salad/EApp.cpp"
 SALAD_OBJS=""
 compileSourcesFromDir "${SRC_DIR}" "${SALAD_SRCS}" "${SALAD_INCLUDE_DIRS}"
 SALAD_OBJS="${SALAD_OBJS} ${LAST_RESULT}"
 #build Salad ELF
-buildElfExecutable "Salad" "${SALAD_OBJS}" "${WIRE_LIB} ${ARDUINO_LIB}" ""
+buildElfExecutable "Salad" "${SALAD_OBJS}" "${DHT_LIB} ${WIRE_LIB} ${ARDUINO_LIB}" ""
 SALAD_ELF="${LAST_RESULT}"
 #create Salad hex
 createHexFile "Salad" "${SALAD_ELF}" ""
