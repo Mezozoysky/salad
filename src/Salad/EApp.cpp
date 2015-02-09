@@ -243,22 +243,26 @@ namespace salad
     dht.begin( currCmdData[ 1 ], Config::thSensorType );
 
     float v = dht.readTemperature();
-
-    byte* b = (byte*)&v;
-    for ( int i = 0; i < 4; ++i )
-    {
-      currCmdData[ i + 1 ] = b[ i ];
-    }
+    byte b;
+    // byte* b = (byte*)&v;
+    // for ( int i = 0; i < 4; ++i )
+    // {
+      // currCmdData[ i + 1 ] = b[ i ];
+    // }
+    b = (byte)v;
+    currCmdData[ 1 ] = b;
 
     v = dht.readHumidity();
 
-    b = (byte*)&v;
-    for ( int i = 0; i < 4; ++i )
-    {
-      currCmdData[ i + 5 ] = b[ i ];
-    }
+    // b = (byte*)&v;
+    // for ( int i = 0; i < 4; ++i )
+    // {
+    //   currCmdData[ i + 5 ] = b[ i ];
+    // }
+    b = (byte)v;
+    currCmdData[ 2 ] = b;
 
-    currCmdDataLen = 9;
+    currCmdDataLen = 3;
   }
 
   void EApp::processUnknownCmd()
