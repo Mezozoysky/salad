@@ -231,7 +231,7 @@ namespace salad
 
   void EApp::processReadTH()
   {
-    if ( currCmdDataLen < 1 )
+    if ( currCmdDataLen < 2 )
     {
       errorCode[ 0 ] = 2; //few args for cmd
       errorCode[ 1 ] = currCmdData[ 0 ];
