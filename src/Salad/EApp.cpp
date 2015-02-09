@@ -239,7 +239,7 @@ namespace salad
       currCmdDataLen = 1;
       return;
     }
-/*
+
     dht.begin( currCmdData[ 1 ], Config::thSensorType );
 
     float v = dht.readTemperature();
@@ -257,12 +257,7 @@ namespace salad
     {
       currCmdData[ i + 5 ] = b[ i ];
     }
-*/
-    for ( int i = 1; i < 9; ++i )
-    {
-      currCmdData[ i ] = i;
-    }
-    
+
     currCmdDataLen = 9;
   }
 
