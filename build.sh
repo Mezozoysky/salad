@@ -112,18 +112,18 @@ WIRE_OBJS="${WIRE_OBJS} ${LAST_RESULT}"
 archiveStaticLib "Wire" "${WIRE_OBJS}" ""
 WIRE_LIB="${LAST_RESULT}"
 
-echo $'\n\tBUILDING DHT LIB\n'
+# echo $'\n\tBUILDING DHT LIB\n'
 
-#compile DHT
-DHT_INCLUDE_DIRS="${DHT_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/cores/arduino"
-DHT_INCLUDE_DIRS="${DHT_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/variants/eightanaloginputs"
-DHT_SRCS="Salad/libs/DHT.cpp"
-DHT_OBJS=""
-compileSourcesFromDir "${SRC_DIR}" "${DHT_SRCS}" "${DHT_INCLUDE_DIRS}"
-DHT_OBJS="${DHT_OBJS} ${LAST_RESULT}"
-#create DHT lib
-archiveStaticLib "DHT" "${DHT_OBJS}" ""
-DHT_LIB="${LAST_RESULT}"
+# #compile DHT
+# DHT_INCLUDE_DIRS="${DHT_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/cores/arduino"
+# DHT_INCLUDE_DIRS="${DHT_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/variants/eightanaloginputs"
+# DHT_SRCS="Salad/libs/DHT.cpp"
+# DHT_OBJS=""
+# compileSourcesFromDir "${SRC_DIR}" "${DHT_SRCS}" "${DHT_INCLUDE_DIRS}"
+# DHT_OBJS="${DHT_OBJS} ${LAST_RESULT}"
+# #create DHT lib
+# archiveStaticLib "DHT" "${DHT_OBJS}" ""
+# DHT_LIB="${LAST_RESULT}"
 
 echo $'\n\tBUILDING SALAD FIRMWARE\n'
 
@@ -132,7 +132,7 @@ SALAD_INCLUDE_DIRS="${SALAD_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/cor
 SALAD_INCLUDE_DIRS="${SALAD_INCLUDE_DIRS} -I${ARDUINO_HOME}/hardware/arduino/variants/eightanaloginputs"
 SALAD_INCLUDE_DIRS="${SALAD_INCLUDE_DIRS} -I${ARDUINO_HOME}/libraries/Wire"
 SALAD_INCLUDE_DIRS="${SALAD_INCLUDE_DIRS} -I${SRC_DIR}/Salad/libs"
-SALAD_SRCS="Salad/Salad.cpp Salad/EApp.cpp"
+SALAD_SRCS="Salad/Salad.cpp Salad/EApp.cpp Salad/DHT11.cpp"
 SALAD_OBJS=""
 compileSourcesFromDir "${SRC_DIR}" "${SALAD_SRCS}" "${SALAD_INCLUDE_DIRS}"
 SALAD_OBJS="${SALAD_OBJS} ${LAST_RESULT}"

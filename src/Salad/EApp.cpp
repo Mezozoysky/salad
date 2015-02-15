@@ -1,7 +1,7 @@
 #include "EApp.h"
 #include "Commands.h"
 #include "Config.h"
-
+#include "DHT11.h"
 
 namespace salad
 {
@@ -10,8 +10,6 @@ namespace salad
   bool EApp::isNewCmd; //true means we have new cmd received 
   
   byte EApp::errorCode[ 2 ]; //buffer for error codes
-
-  DHT EApp::dht; //dht sensor
 
   int EApp::analogTmp; //storage for temporary analog values 
 
@@ -240,29 +238,69 @@ namespace salad
       return;
     }
 
-    dht.begin( currCmdData[ 1 ], Config::thSensorType );
+    currCmdDataLen = DHT11::readTH( currCmdData, errorCode );
+    // dht.begin( currCmdData[ 1 ], Config::thSensorType );
+    // byte pin = currCmdData[ 1 ]; //argument
 
-    float v = dht.readTemperature();
-    byte b;
-    // byte* b = (byte*)&v;
-    // for ( int i = 0; i < 4; ++i )
+    // byte res;
+
+    // pinMode( pin, OUTPUT );
+    // digitalWrite( pin, HIGH );
+
+    // delayMicroseconds( 40 ); // extra?
+
+    // //prepare sensor for reading
+    // digitalWrite( pin, LOW );
+    // delay( 23 );
+    // digitalWrite( pin, HIGH );
+
+    // delayMicroseconds( 40 );
+
+    // pinMode( pin, INPUT );
+    // delayMicroseconds( 40 );
+
+    // res = digitalRead( pin );
+
+    // if ( res )
     // {
-      // currCmdData[ i + 1 ] = b[ i ];
+    //   errorCode[ 0 ] = 3; //dht11 read start error
+    //   errorCode[ 1 ] = 1; //subcode 1
+    //   currCmdData[ 0 ] = CMD_NOP;
+    //   currCmdDataLen = 1;
+    //   return;
     // }
-    b = (byte)v;
-    currCmdData[ 1 ] = b;
 
-    v = dht.readHumidity();
+    // delayMicroseconds( 80 );
 
-    // b = (byte*)&v;
-    // for ( int i = 0; i < 4; ++i )
+    // res = digitalRead( pin );
+
+    // if ( !res )
     // {
-    //   currCmdData[ i + 5 ] = b[ i ];
+    //   errorCode[ 0 ] = 3; //dht11 read start error
+    //   errorCode[ 1 ] = 2 //subcode 2
     // }
-    b = (byte)v;
-    currCmdData[ 2 ] = b;
 
-    currCmdDataLen = 3;
+    // float v = dht.readTemperature();
+    // byte b;
+    // // byte* b = (byte*)&v;
+    // // for ( int i = 0; i < 4; ++i )
+    // // {
+    //   // currCmdData[ i + 1 ] = b[ i ];
+    // // }
+    // b = (byte)v;
+    // currCmdData[ 1 ] = b;
+
+    // v = dht.readHumidity();
+
+    // // b = (byte*)&v;
+    // // for ( int i = 0; i < 4; ++i )
+    // // {
+    // //   currCmdData[ i + 5 ] = b[ i ];
+    // // }
+    // b = (byte)v;
+    // currCmdData[ 2 ] = b;
+
+    // currCmdDataLen = 3;
   }
 
   void EApp::processUnknownCmd()

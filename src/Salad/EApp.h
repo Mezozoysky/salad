@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <DHT.h>
+// #include "DHT11.h"
 
 namespace salad
 {
@@ -39,8 +39,6 @@ private:
   static bool isNewCmd;
 
   static byte errorCode[2];
-
-  static DHT dht;
 
   static int analogTmp;
 };
